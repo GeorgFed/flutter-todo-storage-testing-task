@@ -1,4 +1,4 @@
-// flutter test test/behavior_check.dart — после реализации TODO 1–4.
+// flutter test test/behavior_check.dart — после реализации TODO 1–3.
 import 'dart:async';
 import 'dart:convert';
 
@@ -14,9 +14,8 @@ import 'package:todo_storage_testing_task/storage.dart';
 import 'fakes.dart';
 import 'font_setup.dart';
 
-const fixedV1 = '{"version":1,"items":[{"id":7,"title":"Купить чай"}]}';
-const duplicateTitles =
-    '{"version":1,"items":[{"id":7,"title":"Чай"},{"id":2,"title":"Чай"}]}';
+const fixedJson = '[{"id":7,"title":"Купить чай"}]';
+const duplicateTitles = '[{"id":7,"title":"Чай"},{"id":2,"title":"Чай"}]';
 
 class PendingWriteStore extends MemoryStore {
   PendingWriteStore(super.value);
@@ -76,32 +75,28 @@ void main() {
     expect(find.byType(AlertDialog), findsOneWidget);
   }
 
-  test('JSON v1 сохраняет точные поля и порядок', () {
+  test('JSON-массив сохраняет точные поля и порядок', () {
     const items = [Todo(7, 'Чай'), Todo(2, 'Хлеб')];
     final raw = encodeTodos(items);
-    expect(jsonDecode(raw), {
-      'version': 1,
-      'items': [
-        {'id': 7, 'title': 'Чай'},
-        {'id': 2, 'title': 'Хлеб'},
-      ],
-    });
+    expect(jsonDecode(raw), [
+      {'id': 7, 'title': 'Чай'},
+      {'id': 2, 'title': 'Хлеб'},
+    ]);
     expect(fields(decodeTodos(raw)), [(7, 'Чай'), (2, 'Хлеб')]);
-    expect(fields(decodeTodos(fixedV1)), [(7, 'Купить чай')]);
+    expect(fields(decodeTodos(fixedJson)), [(7, 'Купить чай')]);
   });
 
   test('сломанный JSON и неверная структура дают FormatException', () {
     for (final raw in [
-      '{"version":1',
+      '[{"id":7',
       '',
       'null',
-      '[]',
-      '{"version":1}',
-      '{"version":1,"items":{}}',
-      '{"version":1,"items":[42]}',
-      '{"version":1,"items":[{"id":"7","title":"Чай"}]}',
-      '{"version":1,"items":[{"id":7,"title":null}]}',
-      '{"version":1,"items":[{"id":7}]}',
+      '{}',
+      '[42]',
+      '[null]',
+      '[{"id":"7","title":"Чай"}]',
+      '[{"id":7,"title":null}]',
+      '[{"id":7}]',
     ]) {
       expect(
         () => decodeTodos(raw),
@@ -111,13 +106,9 @@ void main() {
     }
   });
 
-  test('неизвестная версия JSON отклоняется', () {
-    for (final version in ['2', '"1"', '1.0', 'null']) {
-      expect(
-        () => decodeTodos('{"version":$version,"items":[]}'),
-        throwsFormatException,
-      );
-    }
+  test('пустой список хранится как пустой JSON-массив', () {
+    expect(encodeTodos([]), '[]');
+    expect(decodeTodos('[]'), isEmpty);
   });
 
   test(
@@ -137,7 +128,7 @@ void main() {
 
   test('репозиторий пробрасывает сбои чтения и записи', () async {
     final failure = StateError('хранилище недоступно');
-    final store = MemoryStore(fixedV1)..readError = failure;
+    final store = MemoryStore(fixedJson)..readError = failure;
     final repository = TodoRepository(store);
     await expectLater(repository.load(), throwsA(same(failure)));
     store.readError = null;
@@ -146,7 +137,7 @@ void main() {
       repository.save(const [Todo(2, 'Хлеб')]),
       throwsA(same(failure)),
     );
-    expect(store.value, fixedV1);
+    expect(store.value, fixedJson);
     expect(fields(await repository.load()), [(7, 'Купить чай')]);
   });
 
@@ -160,13 +151,13 @@ void main() {
     final standard = PreferencesStore(prefs);
     final other = PreferencesStore(prefs, key: 'practice.other');
     expect(await standard.read(), isNull);
-    await standard.write(fixedV1);
-    expect(await prefs.getString('practice.todos'), fixedV1);
+    await standard.write(fixedJson);
+    expect(await prefs.getString('practice.todos'), fixedJson);
     expect(await other.read(), isNull);
     await prefs.setString('practice.other', duplicateTitles);
     expect(await other.read(), duplicateTitles);
-    await other.write(fixedV1);
-    expect(await prefs.getString('practice.other'), fixedV1);
+    await other.write(fixedJson);
+    expect(await prefs.getString('practice.other'), fixedJson);
   });
 
   testWidgets('индикатор виден до завершения чтения', (tester) async {
@@ -175,7 +166,7 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(canAdd(tester), isFalse);
 
-    store.pending.complete(fixedV1);
+    store.pending.complete(fixedJson);
     await tester.pump();
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.text('Купить чай'), findsOneWidget);
@@ -240,26 +231,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AddTodoPage), findsNothing);
 
-    store.value = fixedV1;
+    store.value = fixedJson;
     await tester.tap(retryButton);
     await tester.pumpAndSettle();
     expect(readError, findsNothing);
     expect(find.text('Купить чай'), findsOneWidget);
     expect(canAdd(tester), isTrue);
-    expect(store.value, fixedV1);
+    expect(store.value, fixedJson);
   });
 
   testWidgets('сбой записи оставляет прежний список и снимает блокировку', (
     tester,
   ) async {
-    final store = MemoryStore(fixedV1)..writeError = StateError('нет записи');
+    final store = MemoryStore(fixedJson)..writeError = StateError('нет записи');
     await launch(tester, store);
     await openForm(tester);
     await submit(tester, 'Должна исчезнуть');
     expect(saveError, findsOneWidget);
     expect(find.text('Купить чай'), findsOneWidget);
     expect(find.text('Должна исчезнуть'), findsNothing);
-    expect(store.value, fixedV1);
+    expect(store.value, fixedJson);
     expect(canAdd(tester), isTrue);
 
     store.writeError = null;
@@ -273,7 +264,7 @@ void main() {
   });
 
   testWidgets('список меняется только после завершения записи', (tester) async {
-    final store = PendingWriteStore(fixedV1);
+    final store = PendingWriteStore(fixedJson);
     await launch(tester, store);
     await openForm(tester);
     await submit(tester, 'Новая задача');
@@ -285,7 +276,7 @@ void main() {
       (widget) => widget is IconButton && widget.tooltip == 'Удалить',
     );
     expect(tester.widget<IconButton>(delete).onPressed, isNull);
-    expect(store.value, fixedV1);
+    expect(store.value, fixedJson);
 
     store.pending.complete();
     await tester.pumpAndSettle();
@@ -301,7 +292,7 @@ void main() {
     final store = PendingStore();
     await launch(tester, store);
     await tester.pumpWidget(const SizedBox.shrink());
-    store.pending.complete(fixedV1);
+    store.pending.complete(fixedJson);
     await tester.pump();
     expect(tester.takeException(), isNull);
     expect(store.value, isNull);
@@ -311,7 +302,7 @@ void main() {
     testWidgets('можно закрыть экран до завершения записи (сбой: $fails)', (
       tester,
     ) async {
-      final store = PendingWriteStore(fixedV1);
+      final store = PendingWriteStore(fixedJson);
       await launch(tester, store);
       await openForm(tester);
       await submit(tester, 'Новая задача');

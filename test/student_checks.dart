@@ -1,4 +1,4 @@
-// flutter test test/student_checks.dart — после реализации TODO 5.
+// flutter test test/student_checks.dart — после реализации TODO 4.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:todo_storage_testing_task/main.dart';
@@ -6,9 +6,9 @@ import 'package:todo_storage_testing_task/storage.dart';
 
 import 'fakes.dart';
 
-const fixedV1 = '{"version":1,"items":[{"id":7,"title":"Купить чай"}]}';
-const brokenJson = '{"version":1';
-const unknownVersion = '{"version":2,"items":[]}';
+const fixedJson = '[{"id":7,"title":"Купить чай"}]';
+const brokenJson = '[{"id":7';
+const wrongFieldType = '[{"id":"7","title":"Чай"}]';
 
 List<(int, String)> fields(List<Todo> items) =>
     items.map((todo) => (todo.id, todo.title)).toList();
@@ -31,20 +31,19 @@ Future<void> launchFresh(WidgetTester tester, TextStore store) async {
 }
 
 void main() {
-  // TODO 5: используйте готовые фикстуры и помощники для четырёх тестов.
+  // TODO 4: используйте готовые фикстуры и помощники для четырёх тестов.
   test('новый репозиторий восстанавливает задачи по порядку', () async {
-    fail('TODO 5: запишите две задачи и сравните поля после восстановления');
+    fail('TODO 4: запишите две задачи и сравните поля после восстановления');
   });
 
-  test(
-    'фиксированный JSON v1 читается, испорченные данные дают ошибку',
-    () async {
-      fail('TODO 5: проверьте fixedV1, brokenJson и unknownVersion');
-    },
-  );
+  test('первый запуск, готовый JSON и повреждённые данные', () async {
+    fail(
+      'TODO 4: проверьте первый запуск, fixedJson и два повреждённых примера',
+    );
+  });
 
   test('сбой записи не затирает ранее сохранённую задачу', () async {
-    fail('TODO 5: проверьте исключение и повторное чтение прежней задачи');
+    fail('TODO 4: проверьте исключение и повторное чтение прежней задачи');
   });
 
   testWidgets('показывает загрузку, восстанавливает и добавляет задачу', (
@@ -53,7 +52,7 @@ void main() {
     final pending = PendingStore();
     await launch(tester, pending);
     fail(
-      'TODO 5: проверьте индикатор, восстановление и добавление через форму',
+      'TODO 4: проверьте индикатор, восстановление и добавление через форму',
     );
   });
 }

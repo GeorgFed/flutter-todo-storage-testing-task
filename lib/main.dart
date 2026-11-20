@@ -43,7 +43,7 @@ class _TodoPageState extends State<TodoPage> {
   @override
   void initState() {
     super.initState();
-    // TODO 4: запустите загрузку здесь.
+    // TODO 3: запустите загрузку здесь.
   }
 
   Future<void> loadTodos() async {
@@ -51,10 +51,10 @@ class _TodoPageState extends State<TodoPage> {
       loading = true;
       error = null;
     });
-    // TODO 4: прочитайте задачи и обработайте успех и ошибку.
+    // TODO 3: прочитайте задачи и обработайте успех и ошибку.
   }
 
-  // TODO 4: дождитесь записи, прежде чем менять список.
+  // TODO 3: дождитесь записи, прежде чем менять список.
   Future<void> persistNext(List<Todo> next) async {}
 
   Future<void> openAddPage() async {
@@ -104,7 +104,7 @@ class _TodoPageState extends State<TodoPage> {
     ],
   );
 
-  // TODO 4: выберите состояние экрана и отключайте добавление через busy.
+  // TODO 3: покажите загрузку, ошибку, пустой список или задачи.
   Widget body() => const Center(child: Text('Начните с TODO 1'));
 
   @override
@@ -114,6 +114,7 @@ class _TodoPageState extends State<TodoPage> {
     floatingActionButton: FloatingActionButton(
       key: const Key('add_todo_button'),
       tooltip: 'Добавить',
+      // TODO 3: отключите добавление, пока busy == true.
       onPressed: openAddPage,
       child: const Icon(Icons.add),
     ),
